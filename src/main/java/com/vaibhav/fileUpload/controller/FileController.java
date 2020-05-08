@@ -1,6 +1,7 @@
 package com.vaibhav.fileUpload.controller;
 
 import com.vaibhav.fileUpload.util.FileProcessor;
+import com.vaibhav.fileUpload.util.ProcessFileResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,8 +15,7 @@ public class FileController {
     FileProcessor fileProcessor;
     
     @PostMapping("/upload")
-    public String upload(@RequestParam("file") MultipartFile file) throws Exception{
-        fileProcessor.processFile(file);
-        return "success";
+    public ProcessFileResult upload(@RequestParam("file") MultipartFile file) throws Exception{
+        return fileProcessor.processFile(file);
     }
 }

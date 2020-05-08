@@ -3,6 +3,9 @@ package com.vaibhav.fileUpload.util;
 import com.vaibhav.fileUpload.domain.Bank;
 import com.vaibhav.fileUpload.domain.Branch;
 import com.vaibhav.fileUpload.domain.UserFile;
+import com.vaibhav.fileUpload.dto.BankDTO;
+import com.vaibhav.fileUpload.dto.BranchDTO;
+import com.vaibhav.fileUpload.dto.UserFileDTO;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
@@ -11,6 +14,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.Errors;
@@ -49,7 +53,8 @@ public class FileProcessor {
      * @param file
      * @throws IOException
      */
-    public void processFile(MultipartFile file) throws IOException {
+    public ProcessFileResult processFile(MultipartFile file) throws IOException {
+        ProcessFileResult processFileResult = new ProcessFileResult();
         Workbook workbook = readFile(file);
     
         UserFile userFile = new UserFile();
@@ -62,6 +67,7 @@ public class FileProcessor {
         } else {
             saveFile(file, userFile);
         }
+        return getProcessFileResult(userFile, errors);
     }
     
     /**
@@ -294,7 +300,6 @@ public class FileProcessor {
             } else {
                 branch.setEmail(emailCell.getStringCellValue());
             }
-            
             validator.validate(branch, errors);
             branchList.add(branch);
         }
@@ -328,5 +333,39 @@ public class FileProcessor {
         for(Branch branch:userFile.getBranchList()){
             logger.info(branch.toString());
         }
+    }
+    
+    /**
+     * Helper method to generate ProcessFileResult
+     * @param userFile
+     * @param errors
+     * @return
+     */
+    public ProcessFileResult getProcessFileResult(UserFile userFile, Errors errors) {
+        ProcessFileResult processFileResult = new ProcessFileResult();
+        if(errors.hasErrors()) {
+            for(ObjectError objectError: errors.getAllErrors()) {
+                processFileResult.addError(objectError.getDefaultMessage());
+            }
+        } else {
+            UserFileDTO userFileDTO = new UserFileDTO();
+            if(userFile.getBankList()!=null && userFile.getBankList().size()>0) {
+                for(Bank bank: userFile.getBankList()){
+                    BankDTO bankDTO = new BankDTO();
+                    BeanUtils.copyProperties(bank, bankDTO);
+                    userFileDTO.addBank(bankDTO);
+                }
+            }
+            
+            if(userFile.getBranchList()!=null && userFile.getBranchList().size()>0) {
+                for(Branch branch: userFile.getBranchList()){
+                    BranchDTO branchDTO = new BranchDTO();
+                    BeanUtils.copyProperties(branch, branchDTO);
+                    userFileDTO.addBranch(branchDTO);
+                }
+            }
+            processFileResult.setUserFile(userFileDTO);
+        }
+        return processFileResult;
     }
 }
